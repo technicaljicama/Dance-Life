@@ -7,6 +7,8 @@
 
 #include "engine.h"
 
+// int __stacksize__ = 4 * 1024 * 1024;
+
 // static int window_id = -1;
 /*
 void keyboardCallback(unsigned char key, int x, int y) {
@@ -31,22 +33,31 @@ void backend_swap() {
 
 int main(int argc, char** argv) {
     // glutInit(&argc, argv);
-    gfxInitDefault();
+    gfxInit(GSP_RGBA8_OES, GSP_RGB565_OES, false);
     pglInit();
     
     if(setup_window()) {
         perror("Could not setup window.");
     }
     
+    glViewport(0, 0, 400, 240);
+    
     if(engine_init_game()) {
         perror("Could not load game.");
     }
     
-    while(1) {
+    while(aptMainLoop()) {
+        gspWaitForVBlank();
+        hidScanInput();
+        
         engine_loop();
+        
+        if(hidKeysDown() & KEY_START)
+            break;
     }
-    // usleep(1000000000);
-    // glutMainLoop();
+    
+    pglExit();
+    gfxExit();
     
     return 0;
 }

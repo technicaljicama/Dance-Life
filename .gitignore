@@ -7,3 +7,7 @@ obj2gl_linux_x64
 ddr-assets.tar.zst
 im.c
 mine.blend
+*.3dsx
+*.smdh
+*.elf
+build

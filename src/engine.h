@@ -16,3 +16,4 @@ void engine_draw_model_rotated(Model* model);
 bool engine_check_collision(Model* model);
 void engine_close();
 void engine_draw_explosion();
+void engine_reset_arrows();

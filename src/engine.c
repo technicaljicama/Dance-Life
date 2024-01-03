@@ -1,6 +1,7 @@
 
 #include "engine.h"
 
+#include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -21,7 +22,7 @@
 static int bomb_time = 0;
 
 static bool draw_bomb = false;
-static Model music_arrows[BPM];
+static Model *music_arrows;
 // static bool quit = false;
 static Texture arrow_tex;
 static Texture music_arrow_tex[4];
@@ -47,6 +48,11 @@ static float angle_lookup[5] = {
     180.0f,
     -90.0f
 };
+static float depth = -.1;
+static float light_ambient[] = {1.0f, 1.0f, 1.0f, 0.0f};
+static float light_position[] = {-4.0f, 2.0f, -10.0f, 0.0f};
+static float light_diffuse[] = {1.0f, 1.0f, 1.0f, 0.0f};
+static float light_specular[] = {1.0f, 1.0f, 1.0f, 0.0f};
 
 bool keys[4] = {false, false, false, false};;
 
@@ -66,6 +72,10 @@ Texture load_texture(const char* path) {
     glBindTexture(GL_TEXTURE_2D, t.tex_id);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t.w, t.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
+    // glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+    // glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+    // glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REFLECTION_MAP);
+    
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -78,6 +88,7 @@ Texture load_texture(const char* path) {
 
 int engine_init_game() {
     srand(time(NULL));
+    init_music();
     
     arrow_tex = load_texture("assets/arrowInv.png");
     
@@ -97,12 +108,14 @@ int engine_init_game() {
     arrow[2].angle = 180.0f;
     arrow[3].angle = -90.0f;
     
+    music_arrows = (Model*)malloc(sizeof(Model) * mpack.num_arrows);
+    
     bomb_time = rand() % 100;
     
-    for(int i = 0; i < BPM; i++) {
-        if(music[i] != 0) {
-            engine_create_model(&music_arrows[i], music_arrow_tex[music[i]-1].tex_id, coord_lookup[music[i]], -2.0f*i, -10.0f, arrowVerts);
-            music_arrows[i].angle = angle_lookup[music[i]];
+    for(int i = 0; i < mpack.num_arrows; i++) {
+        if(arrows[i] != 0) {
+            engine_create_model(&music_arrows[i], music_arrow_tex[arrows[i]-1].tex_id, coord_lookup[arrows[i]], -2.0f*i, -10.0f, arrowVerts);
+            music_arrows[i].angle = angle_lookup[arrows[i]];
         }
         
         if(i == bomb_time) {
@@ -111,14 +124,31 @@ int engine_init_game() {
         }
     }
     
-    init_music();
     
+    
+    float dif[] = {0.784,0.071,0.667, 1.0};
+    float em[] = {1,1,1, 1.0};
+    
+    // glMaterialfv(GL_FRONT, GL_EMISSION, em);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, em);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    // glEnable(GL_COLOR_MATERIAL);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_TEXTURE_CUBE_MAP);
+    // glEnable(GL_TEXTURE_GEN_S);
+    // glEnable(GL_TEXTURE_GEN_T);
+    // glEnable(GL_TEXTURE_GEN_R);
     glClearDepth(1.0);
     
-    // glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClearColor(1.0, 1.0, 1.0, 0.0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    // glClearColor(1.0, 1.0, 1.0, 0.0);
     glShadeModel(GL_SMOOTH);
     
     glMatrixMode(GL_PROJECTION);
@@ -129,7 +159,6 @@ int engine_init_game() {
 
     glMatrixMode(GL_MODELVIEW);
 
-    
     return 0;
 }
 
@@ -140,9 +169,9 @@ void engine_start_frame() {
 }
 
 void engine_reset_arrows() {
-    for(int i = 0; i < BPM; i++) {
-        if(music[i] != 0) {
-            music_arrows[i].x = coord_lookup[music[i]];
+    for(int i = 0; i < mpack.num_arrows; i++) {
+        if(arrows[i] != 0) {
+            music_arrows[i].x = coord_lookup[arrows[i]];
             music_arrows[i].y = -2.0f*i;
             music_arrows[i].z = -10.0f;
         }
@@ -259,8 +288,10 @@ void engine_state_manager(int state) {
                 engine_draw_model_rotated(&arrow[i]);
             }
             
-            for(int i = 0; i < BPM; i++) {
+            for(int i = 0; i < mpack.num_arrows; i++) {
                 music_arrows[i].y += .1f;
+                
+                // music_arrows[i].z += depth;
 
                 engine_draw_model_rotated(&music_arrows[i]);
                 if(engine_check_collision(&music_arrows[i])) {
@@ -269,6 +300,10 @@ void engine_state_manager(int state) {
                         engine_draw_model_rotated(&music_arrows[i]);
                     }
                     music_arrows[i].y = 16.0f;
+                    light_ambient[0] = ((float)rand() / RAND_MAX) * 1.0f;
+                    light_ambient[1] = ((float)rand() / RAND_MAX) * 1.0f;
+                    light_ambient[2] = ((float)rand() / RAND_MAX) * 1.0f;
+                    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
                 }
                 
                 if(i == bomb_time)
@@ -291,7 +326,7 @@ void engine_state_manager(int state) {
                 }
             }
             
-            if(music_arrows[BPM-1].y > 6.0f)
+            if(music_arrows[mpack.num_arrows-1].y > 6.0f)
                 engine_reset_arrows();
         
             break;
@@ -312,5 +347,6 @@ void engine_loop() {
 }
 
 void engine_close() {
+    free(music_arrows);
     exit_music();
 }
