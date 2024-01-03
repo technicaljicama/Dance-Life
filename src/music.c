@@ -12,7 +12,7 @@
 static Mix_Music* song;
 
 MusicPack mpack;
-uint32_t* arrows;
+uint32_t* music;
 
 int init_music() {
     Mix_Init(0);
@@ -32,11 +32,11 @@ int init_music() {
     fread(mpack.mp3_file, mpack.mp3_filename_size, 1, pack);
     mpack.mp3_file[mpack.mp3_filename_size] = '\0';
     fread(&mpack.num_arrows, sizeof(uint32_t), 1, pack);
-    arrows = malloc(mpack.num_arrows*sizeof(uint32_t));
+    music = malloc(mpack.num_arrows*sizeof(uint32_t));
     printf("Loading... %s\n", mpack.mp3_file);
     
     for(int i = 0; i < mpack.num_arrows; i++)
-        fread(&arrows[i], sizeof(uint32_t), 1, pack);
+        fread(&music[i], sizeof(uint32_t), 1, pack);
     
     fclose(pack);
     
@@ -53,7 +53,7 @@ int init_music() {
 
 void exit_music() {
     free(mpack.mp3_file);
-    free(arrows);
+    free(music);
     Mix_FreeMusic(song);
     Mix_CloseAudio();
 }

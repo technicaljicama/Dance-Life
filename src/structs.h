@@ -25,5 +25,5 @@ typedef struct {
     uint32_t num_arrows;
 } MusicPack;
 
-extern uint32_t *arrows;
+extern uint32_t *music;
 extern MusicPack mpack;

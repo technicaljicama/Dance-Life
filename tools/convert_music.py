@@ -2,7 +2,7 @@ import random
 import struct
 
 level = 2
-bpm = 139
+bpm = 180
 i = 0
 name = "assets/red_eyes.mp3"
 

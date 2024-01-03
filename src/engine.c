@@ -10,7 +10,7 @@
 
 #include "music.h"
 #include "bomb.h"
-#include "willyoubemine.h"
+// #include "willyoubemine.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -113,9 +113,9 @@ int engine_init_game() {
     bomb_time = rand() % 100;
     
     for(int i = 0; i < mpack.num_arrows; i++) {
-        if(arrows[i] != 0) {
-            engine_create_model(&music_arrows[i], music_arrow_tex[arrows[i]-1].tex_id, coord_lookup[arrows[i]], -2.0f*i, -10.0f, arrowVerts);
-            music_arrows[i].angle = angle_lookup[arrows[i]];
+        if(music[i] != 0) {
+            engine_create_model(&music_arrows[i], music_arrow_tex[music[i]-1].tex_id, coord_lookup[music[i]], -2.0f*i, -10.0f, arrowVerts);
+            music_arrows[i].angle = angle_lookup[music[i]];
         }
         
         if(i == bomb_time) {
@@ -170,8 +170,8 @@ void engine_start_frame() {
 
 void engine_reset_arrows() {
     for(int i = 0; i < mpack.num_arrows; i++) {
-        if(arrows[i] != 0) {
-            music_arrows[i].x = coord_lookup[arrows[i]];
+        if(music[i] != 0) {
+            music_arrows[i].x = coord_lookup[music[i]];
             music_arrows[i].y = -2.0f*i;
             music_arrows[i].z = -10.0f;
         }
