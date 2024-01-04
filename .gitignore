@@ -11,3 +11,8 @@ mine.blend
 *.smdh
 *.elf
 build
+filesystem
+srcn64
+Makefile.n64
+*.sprite
+*.z64

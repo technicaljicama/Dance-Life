@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <string.h>
 
+#include "net.h"
 #include "engine.h"
 
 static GLFWwindow* window = NULL;
@@ -43,8 +45,8 @@ int setup_window() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 1);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     
-    window = glfwCreateWindow(600, 480, "Project Dance Dog", NULL, NULL); 
-    glfwSetWindowSizeLimits(window, 600, 480, 600, 480);
+    window = glfwCreateWindow(1200, 480, "Project Dance Dog", NULL, NULL); 
+    glfwSetWindowSizeLimits(window, 1200, 480, 1200, 480);
     glfwMakeContextCurrent(window);
     
     glfwSetKeyCallback(window, key_callback);
@@ -58,6 +60,13 @@ void backend_swap() {
 
 int main(int argc, char** argv) {
     glfwInit();
+    
+    if (argc == 2 && strcmp(argv[1], "server") == 0) {
+        net_create_server();
+    }
+    if (argc == 3 && strcmp(argv[1], "client") == 0) {
+        net_create_client(argv[2]);
+    }
     
     if(setup_window()) {
         perror("Could not setup window.");

@@ -2,9 +2,9 @@ import random
 import struct
 
 level = 2
-bpm = 180
+bpm = 114
 i = 0
-name = "assets/red_eyes.mp3"
+name = "assets/get_well.mp3"
 
 def int2uint32(num):
     return struct.pack('I', num)

@@ -10,7 +10,7 @@
 
 #include "music.h"
 #include "bomb.h"
-// #include "willyoubemine.h"
+#include "net.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -23,6 +23,7 @@ static int bomb_time = 0;
 
 static bool draw_bomb = false;
 static Model *music_arrows;
+static Model *music_arrows2;
 // static bool quit = false;
 static Texture arrow_tex;
 static Texture music_arrow_tex[4];
@@ -54,7 +55,12 @@ static float light_position[] = {-4.0f, 2.0f, -10.0f, 0.0f};
 static float light_diffuse[] = {1.0f, 1.0f, 1.0f, 0.0f};
 static float light_specular[] = {1.0f, 1.0f, 1.0f, 0.0f};
 
-bool keys[4] = {false, false, false, false};;
+// static int player = 1;
+// static int other_player = 2;
+
+bool keys[4] = {false, false, false, false};
+bool other_keys[4] = {false, false, false, false};
+
 
 void backend_swap();
 
@@ -109,6 +115,7 @@ int engine_init_game() {
     arrow[3].angle = -90.0f;
     
     music_arrows = (Model*)malloc(sizeof(Model) * mpack.num_arrows);
+    music_arrows2 = (Model*)malloc(sizeof(Model) * mpack.num_arrows);
     
     bomb_time = rand() % 100;
     
@@ -116,6 +123,9 @@ int engine_init_game() {
         if(music[i] != 0) {
             engine_create_model(&music_arrows[i], music_arrow_tex[music[i]-1].tex_id, coord_lookup[music[i]], -2.0f*i, -10.0f, arrowVerts);
             music_arrows[i].angle = angle_lookup[music[i]];
+            
+            engine_create_model(&music_arrows2[i], music_arrow_tex[music[i]-1].tex_id, coord_lookup[music[i]], -2.0f*i, -10.0f, arrowVerts);
+            music_arrows2[i].angle = angle_lookup[music[i]];
         }
         
         if(i == bomb_time) {
@@ -155,7 +165,7 @@ int engine_init_game() {
     glLoadIdentity();
     
     // gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-    gluPerspective(45.0f, 600.0f/480.0f, 0.1f, 100.0f);
+    gluPerspective(45.0f, 1200.0f/480.0f, 0.1f, 100.0f);
 
     glMatrixMode(GL_MODELVIEW);
 
@@ -174,6 +184,11 @@ void engine_reset_arrows() {
             music_arrows[i].x = coord_lookup[music[i]];
             music_arrows[i].y = -2.0f*i;
             music_arrows[i].z = -10.0f;
+        }
+        if(music[i] != 0) {
+            music_arrows2[i].x = coord_lookup[music[i]];
+            music_arrows2[i].y = -2.0f*i;
+            music_arrows2[i].z = -10.0f;
         }
         if(i == bomb_time) {
             bomb.y = -2.0f*i;
@@ -217,26 +232,50 @@ void engine_draw_model(Model* model) {
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-void engine_draw_model_rotated(Model* model) {
-    glLoadIdentity();
-    glTranslatef(model->x, model->y, model->z);
-    glRotatef(model->angle, 0.0f, 0.0f, 1.0f);
+void engine_draw_model_rotated(Model* model, int draw_other) {
+    if(draw_other == 1 || draw_other == 0) {
+        glLoadIdentity();
+        glTranslatef(model->x - 5.0f, model->y, model->z);
+        glRotatef(model->angle, 0.0f, 0.0f, 1.0f);
 
-    glBindTexture(GL_TEXTURE_2D, model->tex_id); 
+        glBindTexture(GL_TEXTURE_2D, model->tex_id); 
+        
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        
+        glVertexPointer(3, GL_FLOAT, THREE_FLOAT, model->verts);
+        glNormalPointer(GL_FLOAT, THREE_FLOAT, model->normals);
+        glTexCoordPointer(2, GL_FLOAT, TWO_FLOAT, model->uvs);
+        
+        glDrawArrays(GL_TRIANGLES, 0, model->vertSize);
+        
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    }
     
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    
-    glVertexPointer(3, GL_FLOAT, THREE_FLOAT, model->verts);
-    glNormalPointer(GL_FLOAT, THREE_FLOAT, model->normals);
-    glTexCoordPointer(2, GL_FLOAT, TWO_FLOAT, model->uvs);
-    
-    glDrawArrays(GL_TRIANGLES, 0, model->vertSize);
-    
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_NORMAL_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    if(net_func != NULL && draw_other == 2 || draw_other == 0) {
+        glLoadIdentity();
+        glTranslatef(model->x + 6.0f, model->y, model->z);
+        glRotatef(model->angle, 0.0f, 0.0f, 1.0f);
+
+        glBindTexture(GL_TEXTURE_2D, model->tex_id); 
+        
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        
+        glVertexPointer(3, GL_FLOAT, THREE_FLOAT, model->verts);
+        glNormalPointer(GL_FLOAT, THREE_FLOAT, model->normals);
+        glTexCoordPointer(2, GL_FLOAT, TWO_FLOAT, model->uvs);
+        
+        glDrawArrays(GL_TRIANGLES, 0, model->vertSize);
+        
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    }
 }
 
 bool engine_check_collision(Model* model) {
@@ -253,6 +292,25 @@ bool engine_check_collision(Model* model) {
             result = true;
         
         else if(model->x == 2.0f && keys[3] == true) //pressed at the right moment
+            result = true;
+    }
+    return result;
+}
+
+bool engine_check_other_collision(Model* model) {
+    bool result = false;
+    if(model->y > 1.5f && model->y < 2.8f) {
+        
+        if(model->x == -4.0f && other_keys[0] == true) //pressed at the right moment
+            result = true;
+        
+        else if(model->x == -2.0f && other_keys[1] == true) //pressed at the right moment
+            result = true;
+        
+        else if(model->x == 0.0f && other_keys[2] == true) //pressed at the right moment
+            result = true;
+        
+        else if(model->x == 2.0f && other_keys[3] == true) //pressed at the right moment
             result = true;
     }
     return result;
@@ -285,7 +343,7 @@ void engine_state_manager(int state) {
         case STATE_GAME:
             for(int i = 0; i < 4; i++) {
                 // arrow[i].y += 0.01f;
-                engine_draw_model_rotated(&arrow[i]);
+                engine_draw_model_rotated(&arrow[i], 0);
             }
             
             for(int i = 0; i < mpack.num_arrows; i++) {
@@ -293,11 +351,11 @@ void engine_state_manager(int state) {
                 
                 // music_arrows[i].z += depth;
 
-                engine_draw_model_rotated(&music_arrows[i]);
+                engine_draw_model_rotated(&music_arrows[i], 1);
                 if(engine_check_collision(&music_arrows[i])) {
                     for(int b = 0; b < 60; b++) {
                         music_arrows[i].z -= 1.0f;
-                        engine_draw_model_rotated(&music_arrows[i]);
+                        engine_draw_model_rotated(&music_arrows[i], 1);
                     }
                     music_arrows[i].y = 16.0f;
                     light_ambient[0] = ((float)rand() / RAND_MAX) * 1.0f;
@@ -305,15 +363,30 @@ void engine_state_manager(int state) {
                     light_ambient[2] = ((float)rand() / RAND_MAX) * 1.0f;
                     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
                 }
-                
-                if(i == bomb_time)
+                if(net_func != NULL) {
+                    music_arrows2[i].y += .1f;
+                    engine_draw_model_rotated(&music_arrows2[i], 2);
+                    
+                    if(engine_check_other_collision(&music_arrows2[i])) {
+                        for(int b = 0; b < 60; b++) {
+                            music_arrows2[i].z -= 1.0f;
+                            engine_draw_model_rotated(&music_arrows2[i], 2);
+                        }
+                        music_arrows2[i].y = 16.0f;
+                        light_ambient[0] = ((float)rand() / RAND_MAX) * 1.0f;
+                        light_ambient[1] = ((float)rand() / RAND_MAX) * 1.0f;
+                        light_ambient[2] = ((float)rand() / RAND_MAX) * 1.0f;
+                        glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+                    }
+                }
+                if(i == bomb_time && net_func == NULL)
                     draw_bomb = true;
                 
             }
             if(draw_bomb) {
                 bomb.y += .1f;
                 bomb.angle += 5.0f;
-                engine_draw_model_rotated(&bomb);
+                engine_draw_model_rotated(&bomb, 1);
                 if(engine_check_collision(&bomb))
                     explosion = true;
 
@@ -322,6 +395,7 @@ void engine_state_manager(int state) {
                     engine_draw_explosion();
                 }
                 if(explosionSize > 30.0f) {
+                    printf("Hit bomb\n");
                     exit(0); //TODO: Gameover screen
                 }
             }
@@ -340,6 +414,18 @@ void engine_state_manager(int state) {
 void engine_loop() {
     
     engine_start_frame();
+    
+    if(net_func != NULL) {
+        net_func();
+        if(net_func != net_send_keys) {
+            net_server_send_keys();
+            // player = 1;
+        }
+        if(net_func != net_read_keys) {
+            net_client_read_keys();
+            // player = 2;
+        }
+    }
         
     engine_state_manager(state);
 
@@ -348,5 +434,6 @@ void engine_loop() {
 
 void engine_close() {
     free(music_arrows);
+    free(music_arrows2);
     exit_music();
 }
