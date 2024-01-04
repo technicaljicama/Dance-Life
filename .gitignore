@@ -16,3 +16,4 @@ srcn64
 Makefile.n64
 *.sprite
 *.z64
+*.wav
