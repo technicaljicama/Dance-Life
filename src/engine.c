@@ -10,6 +10,7 @@
 
 #include "music.h"
 #include "bomb.h"
+#include "machine.h"
 #include "net.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -28,8 +29,13 @@ static Model *music_arrows2;
 static Texture arrow_tex;
 static Texture music_arrow_tex[4];
 static Model arrow[4];
+
 static Model bomb;
 static Texture bomb_tex;
+
+static Texture machine_tex;
+static Model machine;
+
 static int state = STATE_GAME;
 static float coord_lookup[5] = {
     -10.0f,
@@ -55,8 +61,8 @@ static float light_position[] = {-4.0f, 2.0f, -10.0f, 0.0f};
 static float light_diffuse[] = {1.0f, 1.0f, 1.0f, 0.0f};
 static float light_specular[] = {1.0f, 1.0f, 1.0f, 0.0f};
 
-// static int player = 1;
-// static int other_player = 2;
+static bool machine_back = false;
+static bool machine_anim = false;
 
 bool keys[4] = {false, false, false, false};
 bool other_keys[4] = {false, false, false, false};
@@ -67,16 +73,23 @@ void backend_swap();
 Texture load_texture(const char* path) {
     Texture t;
     int channels;
+    GLenum format = GL_RGBA;
     
     unsigned char* data = stbi_load(path, &t.w, &t.h, &channels, 0);
     
     if(!data)
         perror("Could not load texture.");
     
+    if (channels == 3) {
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        format = GL_RGB;
+    }
+
+    
     glGenTextures(1, &t.tex_id);
     
     glBindTexture(GL_TEXTURE_2D, t.tex_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t.w, t.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, t.w, t.h, 0, format, GL_UNSIGNED_BYTE, data);
 
     // glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
     // glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
@@ -97,6 +110,12 @@ int engine_init_game() {
     init_music();
     
     arrow_tex = load_texture("assets/arrowInv.png");
+    
+    machine_tex = load_texture("assets/machine.png");
+    engine_create_model(&machine, machine_tex.tex_id, 0.0f, 0.0f, -20.0f, machineVerts);
+    machine.sx = 5.0f;
+    machine.sy = 5.0f;
+    machine.sz = 5.0f;
     
     music_arrow_tex[0] = load_texture("assets/arrowA.png");
     music_arrow_tex[1] = load_texture("assets/arrowB.png");
@@ -209,11 +228,16 @@ void engine_create_model(Model* model, unsigned int texture, float x, float y, f
     model->normals = model_data.normalCoords;
     model->uvs = model_data.texCoords;
     model->vertSize = model_data.numVerts;
+    model->sx = 1.0f;
+    model->sy = 1.0f;
+    model->sz = 1.0f;
 }
 
 void engine_draw_model(Model* model) {
     glLoadIdentity();
     glTranslatef(model->x, model->y, model->z);
+    glScalef(model->sx, model->sy, model->sz);
+    glRotatef(model->angle, 0.0f, 1.0f, 1.0f);
 
     glBindTexture(GL_TEXTURE_2D, model->tex_id); 
     
@@ -345,7 +369,22 @@ void engine_state_manager(int state) {
                 // arrow[i].y += 0.01f;
                 engine_draw_model_rotated(&arrow[i], 0);
             }
-            
+            if(machine_anim == false) {
+                machine.z++;
+                
+                if(machine.z > -11.0f)
+                    machine_anim = true;
+            }
+            if(!machine_back)
+                machine.angle += 0.1f;
+            else
+                machine.angle -= 0.1f;
+            if(machine.angle > 18.0f)
+                machine_back = true;
+            if(machine.angle < -18.0f)
+                machine_back = false;
+        
+            engine_draw_model(&machine);
             for(int i = 0; i < mpack.num_arrows; i++) {
                 music_arrows[i].y += .1f;
                 

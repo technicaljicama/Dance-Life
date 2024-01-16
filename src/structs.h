@@ -16,6 +16,9 @@ typedef struct {
     float y;
     float z;
     float angle;
+    float sx;
+    float sy;
+    float sz;
 } Model;
 
 
